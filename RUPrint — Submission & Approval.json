@@ -1,0 +1,712 @@
+{
+  "name": "RUPrint — Submission & Approval",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1ApJ1N3x0rOpsuKMwQEhS_UBlaYpajRSCwI6LQ3ecR98",
+          "cachedResultName": "RUPrint Content Submission (Responses)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "259272906",
+          "cachedResultName": "Form Responses 1"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "9313fe88-db1d-40ea-8995-7250274fc6b1",
+      "name": "New Form Response",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        -64
+      ],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "hHLKBCRIGbFppWyE",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "name-not-empty",
+              "leftValue": "={{ $json[\"নাম\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "course-not-empty",
+              "leftValue": "={{ $json.Course }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "category-not-empty",
+              "leftValue": "={{ $json.Category }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "file-not-empty",
+              "leftValue": "={{ $json[\"Upload your file\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "consent-checked",
+              "leftValue": "={{ $json[\"Copyright Consent\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "da9fee87-67fa-4510-a60a-735ccce98d7b",
+      "name": "Validate Submission",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -256,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "ruprint_submissions",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "contributor_name",
+              "fieldValue": "={{ $('New Form Response').item.json[\"নাম\"] }}"
+            },
+            {
+              "fieldId": "department",
+              "fieldValue": "={{ $('New Form Response').item.json.Department }}"
+            },
+            {
+              "fieldId": "course",
+              "fieldValue": "={{ $('New Form Response').item.json.Course }}"
+            },
+            {
+              "fieldId": "category",
+              "fieldValue": "={{ $('New Form Response').item.json.Category }}"
+            },
+            {
+              "fieldId": "semester",
+              "fieldValue": "={{ $('New Form Response').item.json.Semester }}"
+            },
+            {
+              "fieldId": "file_url",
+              "fieldValue": "={{ $('New Form Response').item.json[\"Upload your file\"] }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $('New Form Response').item.json[\"Contact Number\"] }}"
+            },
+            {
+              "fieldId": "consent",
+              "fieldValue": "true"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "30a84241-886f-4e1e-8d18-ee018a275583",
+      "name": "Insert Submission to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        384,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "5CcEEBjKkEGKxe9c",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1905819735",
+        "text": "=📚 নতুন RUPrint Submission\nনাম: {{ $(\"New Form Response\").item.json[\"নাম\"] }}\nCourse: {{ $(\"New Form Response\").item.json.Course }}\nCategory: {{ $(\"New Form Response\").item.json.Category }}\nFile: {{ $(\"New Form Response\").item.json[\"Upload your file\"] }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Approve",
+                    "additionalFields": {
+                      "callback_data": "=approve_{{ $json.id }}"
+                    }
+                  },
+                  {
+                    "text": "❌ Reject",
+                    "additionalFields": {
+                      "callback_data": "=reject_{{ $json.id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "2d95aa15-3994-440d-8a59-63e11122529e",
+      "name": "Send Approval Request to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        0
+      ],
+      "webhookId": "64624556-e02b-409b-be76-4ab780572a21",
+      "credentials": {
+        "telegramApi": {
+          "id": "kCzaxWJ1SUXUu0VC",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "255e1b29-a196-4804-bed9-dfcc1d3ee4a4",
+      "name": "Skip Invalid Submission",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "id": "3b7e2643-09e7-4c1c-98a3-a38ed0cc9f7e",
+      "name": "Telegram Callback Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -704,
+        400
+      ],
+      "webhookId": "eefb2b49-2cb1-41aa-9cd7-d7f93dc73fd4",
+      "credentials": {
+        "telegramApi": {
+          "id": "kCzaxWJ1SUXUu0VC",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const cb = $json.callback_query || {};\nconst data = String(cb.data || '');\nconst sep = data.indexOf('_');\nconst action = sep === -1 ? '' : data.slice(0, sep);\nconst submissionId = sep === -1 ? '' : data.slice(sep + 1);\nif (!action || !submissionId) {\n  throw new Error('Invalid callback_data: \"' + data + '\"');\n}\nreturn { json: {\n  action,\n  submissionId,\n  messageId: cb.message?.message_id,\n  chatId: cb.message?.chat?.id,\n} };"
+      },
+      "id": "bef2bdb5-1948-4350-9b3c-43dfb09321e2",
+      "name": "Parse Callback Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "action-approve",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8dfb9049-51bb-4e5d-83f9-6d40a0f44c20",
+      "name": "Is Approve",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "ruprint_submissions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Parse Callback Data').item.json.submissionId }}"
+            }
+          ]
+        }
+      },
+      "id": "9bbc7316-be8e-4fc3-9398-3d2c90619c7b",
+      "name": "Get Submission Details",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        656,
+        560
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "5CcEEBjKkEGKxe9c",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1GA1-6jkJm2SGzLZhSJVkYqVFDsrVelcw5bDKU4D4VRY",
+          "cachedResultName": "RUPrint Folder Lookup"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0",
+          "cachedResultName": "Sheet1"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "MatchKey",
+              "lookupValue": "={{ $(\"Get Submission Details\").item.json.course }}|{{ $(\"Get Submission Details\").item.json.category }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "14548ad5-b0b9-427e-ac8a-2a1cd6086b62",
+      "name": "Lookup Target Folder",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        560
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ChrV99CHlPf0N9Wz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ ($(\"Get Submission Details\").item.json.file_url || \"\").match(/[-\\w]{25,}/)?.[0] }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Lookup Target Folder').item.json.FolderID }}"
+        }
+      },
+      "id": "4a3a1e97-b699-4dd6-89fb-2df39ce2829e",
+      "name": "Move File to Course Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1104,
+        560
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "b6oAtarZNW8e2ODZ",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "ruprint_submissions",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Parse Callback Data').item.json.submissionId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "approved"
+            },
+            {
+              "fieldId": "target_folder_id",
+              "fieldValue": "={{ $('Lookup Target Folder').item.json.FolderID }}"
+            },
+            {
+              "fieldId": "decided_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "f8ae185b-a0ff-403f-a8e7-4daee46aa2df",
+      "name": "Mark Submission Approved",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        560
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "5CcEEBjKkEGKxe9c",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "editMessageText",
+        "chatId": "={{ $('Parse Callback Data').item.json.chatId }}",
+        "messageId": "={{ $('Parse Callback Data').item.json.messageId }}",
+        "text": "=✅ Submission #{{ $(\"Parse Callback Data\").item.json.submissionId }} approved হয়েছে এবং ফাইল সঠিক ফোল্ডারে move করা হয়েছে।",
+        "additionalFields": {}
+      },
+      "id": "06a62ba1-c66f-4f64-ab4f-0b6c796f3eb5",
+      "name": "Confirm Approval on Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1552,
+        560
+      ],
+      "webhookId": "c433485a-1cc7-4529-9819-9c01d6fda10b",
+      "credentials": {
+        "telegramApi": {
+          "id": "kCzaxWJ1SUXUu0VC",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "ruprint_submissions",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Parse Callback Data').item.json.submissionId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "rejected"
+            },
+            {
+              "fieldId": "decided_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "fd203283-d872-4bcb-955c-9bd042ce7b60",
+      "name": "Mark Submission Rejected",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        656,
+        752
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "5CcEEBjKkEGKxe9c",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "editMessageText",
+        "chatId": "={{ $('Parse Callback Data').item.json.chatId }}",
+        "messageId": "={{ $('Parse Callback Data').item.json.messageId }}",
+        "text": "=❌ Submission #{{ $(\"Parse Callback Data\").item.json.submissionId }} rejected হয়েছে।",
+        "additionalFields": {}
+      },
+      "id": "8b1344d3-8401-48c2-a12a-b1e2a3db20d8",
+      "name": "Confirm Rejection on Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        752
+      ],
+      "webhookId": "5bd5e4fe-9859-4f6d-9707-bede506e0195",
+      "credentials": {
+        "telegramApi": {
+          "id": "kCzaxWJ1SUXUu0VC",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "New Form Response": {
+      "main": [
+        [
+          {
+            "node": "Validate Submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Submission": {
+      "main": [
+        [
+          {
+            "node": "Insert Submission to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Invalid Submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Submission to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Send Approval Request to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Callback Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Callback Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Callback Data": {
+      "main": [
+        [
+          {
+            "node": "Is Approve",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Approve": {
+      "main": [
+        [
+          {
+            "node": "Get Submission Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Submission Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Submission Details": {
+      "main": [
+        [
+          {
+            "node": "Lookup Target Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Target Folder": {
+      "main": [
+        [
+          {
+            "node": "Move File to Course Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move File to Course Folder": {
+      "main": [
+        [
+          {
+            "node": "Mark Submission Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Submission Approved": {
+      "main": [
+        [
+          {
+            "node": "Confirm Approval on Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Submission Rejected": {
+      "main": [
+        [
+          {
+            "node": "Confirm Rejection on Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f90c0ee3-beab-4934-91d7-90398d390a18",
+  "meta": {
+    "instanceId": "b651f8fe7464995d5956d9036d6dd83f5c87778a1d35927596f0125222733305"
+  },
+  "nodeGroups": [
+    {
+      "id": "ead490ef-a715-4c72-9c3b-c2a43d4ff3cb",
+      "name": "Collect & validate submissions",
+      "nodeIds": [
+        "30a84241-886f-4e1e-8d18-ee018a275583",
+        "2d95aa15-3994-440d-8a59-63e11122529e"
+      ],
+      "description": "Stores each valid Google Form response as pending and sends an approval request with Approve/Reject buttons to Telegram."
+    },
+    {
+      "id": "5fa71d8b-1b3c-449c-b624-ac330815cf59",
+      "name": "Process approval decision",
+      "nodeIds": [
+        "8dfb9049-51bb-4e5d-83f9-6d40a0f44c20",
+        "9bbc7316-be8e-4fc3-9398-3d2c90619c7b",
+        "14548ad5-b0b9-427e-ac8a-2a1cd6086b62",
+        "4a3a1e97-b699-4dd6-89fb-2df39ce2829e",
+        "f8ae185b-a0ff-403f-a8e7-4daee46aa2df",
+        "06a62ba1-c66f-4f64-ab4f-0b6c796f3eb5",
+        "fd203283-d872-4bcb-955c-9bd042ce7b60",
+        "8b1344d3-8401-48c2-a12a-b1e2a3db20d8"
+      ],
+      "description": "On button press, approves (moves the Drive file into the mapped course folder) or rejects, updates the record and confirms in chat."
+    }
+  ],
+  "id": "mkoGqhplHJHE3J7R",
+  "tags": []
+}
